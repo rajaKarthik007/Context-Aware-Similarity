@@ -3,7 +3,7 @@
 import torch
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModel
-from model import ContextualContrastiveModel  
+from model import ContextualContrastiveModel, run_triplet_eval
 import sys
 
 def show_similarity(model, sentence1, sentence2, context, device):
@@ -15,14 +15,19 @@ def show_similarity(model, sentence1, sentence2, context, device):
         print(f"\nSimilarity between:\n- \"{sentence1}\"\n- \"{sentence2}\"\n→ Under context: \"{context}\"\n→ Cosine Similarity: {sim:.4f}")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python run_similarity.py <model_weights.pt>")
+    if len(sys.argv) < 3:
+        print("Usage: python run_similarity.py <model_weights.pt> <model_name>")
         sys.exit(1)
 
     weights_path = sys.argv[1]
+    model_name = sys.argv[2]
+    
+    print("weights_path: ", weights_path)
+    print("model_name: ", model_name)
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
-    model = ContextualContrastiveModel().to(device)
+    #model = ContextualContrastiveModel().to(device)
+    model = ContextualContrastiveModel(encoder_name=model_name).to(device)
     model.load_state_dict(torch.load(weights_path, map_location=device))
     print(f"Loaded model weights from: {weights_path}")
 
@@ -33,3 +38,5 @@ if __name__ == "__main__":
 
     show_similarity(model, s1, s2, context1, device)
     show_similarity(model, s1, s2, context2, device)
+    
+    run_triplet_eval(weights_path, "triplet_eval_dataset.json", encoder_name=model_name)
